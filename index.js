@@ -1,36 +1,36 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 
 // =================================================================
 // --- CONFIGURACIÓN ---
 // =================================================================
 
-// 1. OBTÉN TU API KEY DE: https://aistudio.google.com/app/apikey
-const GEMINI_API_KEY = "AQUI_TU_AP"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=GEMINI_API_KEY"I_KEY_DE_GEMINI"; // <-- REEMPLAZA ESTO
+// 1. Clave API de prueba
+const GEMINI_API_KEY = "AIzaSyDdrQ3USvyaUk8SFq01B1CunboFGHbH84o";
 
-// 2. SIMULACIÓN DE LA BASE DE CONOCIMIENTO (Como si la leyera de la hoja)
+// 2. BASE DE CONOCIMIENTO (Actualizada)
 const BASE_DE_CONOCIMIENTO_TEXTO = `
 --- TERMINAL: Mercado Pago ---
 Formalidad: Ideal para negocios informales y emprendedores.
 Requiere_RFC: No, para empezar.
-Comision_Unica: Aproximadamente 2.89% + IVA.
+Comision_Unica: Aproximadamente 3.5% + IVA.
 Costo_Inicial: $899 MXN.
-Ventaja_Clave: Sin renta mensual y fácil de empezar a usar.
+Ventaja_Clave: Sin renta mensual, fácil de empezar a usar y tu dinero es al instante, cosa que ni la de Spin ni Getnet pueden ofrecer.
 
 --- TERMINAL: Spin by Oxxo ---
-Formalidad: Para negocios pequeños, informales o formales.
+Formalidad: Para negocios medianos y grandes, informales o formales.
 Requiere_RFC: No es estrictamente necesario para empezar.
-Comision_Unica: Alrededor de 3.5% + IVA.
-Costo_Inicial: $499 MXN.
-Ventaja_Clave: Costo inicial bajo y se compra en cualquier Oxxo.
+Comision_Variable: Alrededor de 0.90% a 2.89% + IVA.
+Costo_Inicial: $499 MXN o nada según el giro y facturación.
+Ventaja_Clave: Costo inicial bajo que se paga al segundo mes, se puede integrar al ecosistema de Oxxo como el programa de lealtad Spin Premia, y es la más adaptable si no quieres pagar renta.
 
 --- TERMINAL: Getnet ---
 Formalidad: Enfocado en negocios ya establecidos y formales.
-Requiere_RFC: Sí, es un requisito.
+Requiere_RFC: Sí, si buscas las mejores comisiones, pero también se adapta a cualquier negocio.
 Comision_Unica: Varía según el giro, pero suele ser competitiva.
 Costo_Inicial: Renta mensual de $200 MXN + IVA.
-Ventaja_Clave: Funciones más avanzadas y reportes detallados para negocios que lo necesitan.
+Ventaja_Clave: Funciones más avanzadas y reportes detallados. Esta terminal es la que mejor integra el punto de venta como tal, donde puedes llevar inventario y cobrar servicios como luz o teléfono, cosa que la de Oxxo no puede hacer.
 `;
 
 // 3. PROMPT DEL SISTEMA (La personalidad de "Valentina")
@@ -62,7 +62,18 @@ ${BASE_DE_CONOCIMIENTO_TEXTO}
 // =================================================================
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+const safetySettings = [
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+];
+
+const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    safetySettings: safetySettings
+});
 
 const client = new Client({
   authStrategy: new LocalAuth(),
@@ -76,7 +87,7 @@ const client = new Client({
 // --- LÓGICA DEL BOT ---
 // =================================================================
 
-const conversationHistory = {}; // Objeto para guardar el historial por usuario
+const conversationHistory = {};
 
 client.on('qr', qr => {
   qrcode.generate(qr, { small: true });
@@ -91,22 +102,14 @@ client.on('message', async message => {
 
   const userId = message.from;
 
-  // Inicializa el historial si es un usuario nuevo
   if (!conversationHistory[userId]) {
     conversationHistory[userId] = [
-      {
-        role: "user",
-        parts: [{ text: PROMPT_SISTEMA }],
-      },
-      {
-        role: "model",
-        parts: [{ text: "Entendido. Soy Valentina, lista para asesorar." }],
-      },
+      { role: "user", parts: [{ text: PROMPT_SISTEMA }] },
+      { role: "model", parts: [{ text: "Entendido. Soy Valentina, lista para asesorar." }] },
     ];
   }
 
   try {
-    // Inicia una sesión de chat con el historial del usuario
     const chat = model.startChat({
       history: conversationHistory[userId],
       generationConfig: {
@@ -118,11 +121,9 @@ client.on('message', async message => {
     const response = await result.response;
     const rawText = response.text();
 
-    // Actualiza el historial con el último mensaje y la respuesta del bot
     conversationHistory[userId].push({ role: "user", parts: [{ text: message.body }] });
     conversationHistory[userId].push({ role: "model", parts: [{ text: rawText }] });
 
-    // Divide la respuesta en múltiples mensajes usando [FIN_MENSAJE]
     const mensajes = rawText.split('[FIN_MENSAJE]').map(msg => msg.trim()).filter(msg => msg);
 
     for (const msg of mensajes) {
@@ -130,7 +131,7 @@ client.on('message', async message => {
     }
 
   } catch (err) {
-    console.error('Error procesando con Gemini:', err);
+    console.error('Error al procesar con Gemini:', err);
     await message.reply('Hubo un error al conectar con la IA. Por favor, intenta de nuevo.');
   }
 });
