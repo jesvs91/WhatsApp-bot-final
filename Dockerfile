@@ -1,7 +1,8 @@
-# Usa una imagen base de Node.js
+# Usa una imagen base oficial de Node.js que incluye herramientas de construcción
 FROM node:18-slim
 
 # Instala las dependencias del sistema operativo que Puppeteer necesita
+# Esto es crucial para que Chrome funcione en el servidor
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     fonts-liberation \
@@ -26,6 +27,7 @@ RUN apt-get update && apt-get install -y \
     libstdc++6 \
     libx11-6 \
     libx11-xcb1 \
+
     libxcb1 \
     libxcomposite1 \
     libxcursor1 \
@@ -42,20 +44,20 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     --no-install-recommends
 
-# Define el directorio de trabajo
+# Define el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copia los archivos de definición de paquetes
+# Copia los archivos de definición de paquetes primero para aprovechar el caché de Docker
 COPY package*.json ./
 
 # Instala las dependencias de Node.js
 RUN npm install
 
-# Copia el resto del código de la aplicación
+# Copia el resto del código de la aplicación al directorio de trabajo
 COPY . .
 
-# Expone el puerto que la aplicación usará
+# Expone el puerto que la aplicación usará (Koyeb lo gestionará)
 EXPOSE 8080
 
-# Comando para iniciar la aplicación
+# Comando para iniciar la aplicación cuando el contenedor se inicie
 CMD [ "npm", "start" ]
