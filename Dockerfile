@@ -1,30 +1,61 @@
-# Usar una imagen base oficial de Node.js
+# Usa una imagen base de Node.js
 FROM node:18-slim
 
-# Instalar las dependencias necesarias para Puppeteer/Chromium
-RUN apt-get update \
-  && apt-get install -y \
-  chromium \
-  fonts-ipafont-gothic \
-  fonts-wqy-zenhei \
-  fonts-thai-tlwg \
-  fonts-kacst \
-  fonts-freefont-ttf \
-  libxss1 \
-  --no-install-recommends
+# Instala las dependencias del sistema operativo que Puppeteer necesita
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libc6 \
+    libcairo2 \
+    libcups2 \
+    libdbus-1-3 \
+    libexpat1 \
+    libfontconfig1 \
+    libgbm1 \
+    libgcc1 \
+    libgdk-pixbuf2.0-0 \
+    libglib2.0-0 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libstdc++6 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
+    lsb-release \
+    wget \
+    xdg-utils \
+    --no-install-recommends
 
-# Crear el directorio de la aplicación
+# Define el directorio de trabajo
 WORKDIR /app
 
-# Copiar los archivos de dependencias
-COPY package.json .
-COPY package-lock.json* .
+# Copia los archivos de definición de paquetes
+COPY package*.json ./
 
-# Instalar las dependencias de Node.js
-RUN npm install --production
+# Instala las dependencias de Node.js
+RUN npm install
 
-# Copiar el resto del código de la aplicación
+# Copia el resto del código de la aplicación
 COPY . .
 
+# Expone el puerto que la aplicación usará
+EXPOSE 8080
+
 # Comando para iniciar la aplicación
-CMD ["npm", "start"]
+CMD [ "npm", "start" ]
