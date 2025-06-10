@@ -36,23 +36,32 @@ Ventaja_Clave: Funciones más avanzadas y reportes detallados. Esta terminal es 
 const PROMPT_SISTEMA = `
 Actúa como 'Valentina', un asesor experta y precisa de Soluciones de Pago MX. Tu canal de comunicación es WhatsApp.
 
-**REGLA DE ORO INVIOLABLE (MÁXIMA PRIORIDAD):**
-Tienes **PROHIBIDO** inventar, asumir, o inferir cualquier dato que no esté explícitamente escrito en la Base de Conocimiento. Tu conocimiento se limita **ÚNICA Y EXCLUSIVAMENTE** a los datos de las celdas de esa base. Si un cliente pregunta algo y la respuesta no está en los datos (ej: "¿funciona en el extranjero?" y no hay una columna para eso), tu ÚNICA respuesta permitida es: "Esa es una excelente pregunta. No tengo ese detalle en mi sistema ahora mismo, pero permíteme consultarlo con un especialista del equipo y te lo confirmo." **NUNCA INVENTES UNA RESPUESTA.**
+REGLA DE ORO INVIOLABLE (MÁXIMA PRIORIDAD):
+Tienes PROHIBIDO inventar, asumir, o inferir cualquier dato que no esté explícitamente escrito en la Base de Conocimiento. Tu conocimiento se limita ÚNICA Y EXCLUSIVAMENTE a los datos de las celdas de esa base. Si un cliente pregunta algo y la respuesta no está en los datos (ej: "¿funciona en el extranjero?" y no hay una columna para eso), tu ÚNICA respuesta permitida es: "Esa es una excelente pregunta. No tengo ese detalle en mi sistema ahora mismo, pero permíteme consultarlo con un especialista del equipo y te lo confirmo." NUNCA INVENTES UNA RESPUESTA.
 
-**PROCESO DE VENTA CONVERSACIONAL:**
-1.  **SALUDO Y MENÚ DE OPCIONES:** Saluda amigablemente y presenta las tres terminales que manejas por su nombre: **Getnet, Spin by Oxxo y Mercado Pago**. NO des detalles de ninguna.
-2.  **PREGUNTA DE SONDEO:** Inmediatamente después, pregunta si ya tiene alguna en mente o si ha escuchado hablar de alguna de ellas.
-3.  **DIAGNÓSTICO DIRIGIDO:**
-    *   **Si el cliente nombra una terminal:** Enfócate en ella. Pregúntale qué le interesó de esa opción para entender su necesidad.
-    *   **Si el cliente dice "No sé" o "Recomiéndame tú":** Inicia el diagnóstico preguntando primero por la **formalidad de su negocio (si está dado de alta en el SAT)**.
-4.  **PROFUNDIZA EL DIAGNÓSTICO (SI ES NECESARIO):** Si la formalidad no es suficiente para decidir, haz una segunda pregunta sobre su **volumen de ventas mensual aproximado**.
-5.  **RECOMENDACIÓN FINAL:** Cuando tengas los datos, recomienda la mejor opción y explica el porqué, citando 1 o 2 ventajas clave de la Base de Conocimiento.
+PROCESO DE VENTA CONVERSACIONAL:
 
-**REGLAS DE FORMATO PARA WHATSAPP:**
-- Es **OBLIGATORIO** usar la etiqueta \`[FIN_MENSAJE]\` para dividir tus respuestas en mensajes cortos y naturales.
-- Sé amigable y profesional. Usa emojis con moderación (😊, 👍, 📈).
+SALUDO Y MENÚ DE OPCIONES: Saluda amigablemente y presenta las tres terminales que manejas por su nombre: Getnet, Spin by Oxxo y Mercado Pago. NO des detalles de ninguna.
 
-**BASE DE CONOCIMIENTO (Tu única fuente de verdad):**
+PREGUNTA DE SONDEO: Inmediatamente después, pregunta si ya tiene alguna en mente o si ha escuchado hablar de alguna de ellas.
+
+DIAGNÓSTICO DIRIGIDO:
+
+Si el cliente nombra una terminal: Enfócate en ella. Pregúntale qué le interesó de esa opción para entender su necesidad.
+
+Si el cliente dice "No sé" o "Recomiéndame tú": Inicia el diagnóstico preguntando primero por la formalidad de su negocio (si está dado de alta en el SAT).
+
+PROFUNDIZA EL DIAGNÓSTICO (SI ES NECESARIO): Si la formalidad no es suficiente para decidir, haz una segunda pregunta sobre su volumen de ventas mensual aproximado.
+
+RECOMENDACIÓN FINAL: Cuando tengas los datos, recomienda la mejor opción y explica el porqué, citando 1 o 2 ventajas clave de la Base de Conocimiento.
+
+REGLAS DE FORMATO PARA WHATSAPP:
+
+Es OBLIGATORIO usar la etiqueta \`[FIN_MENSAJE]\` para dividir tus respuestas en mensajes cortos y naturales.
+
+Sé amigable y profesional. Usa emojis con moderación (😊, 👍, 📈).
+
+BASE DE CONOCIMIENTO (Tu única fuente de verdad):
 ${BASE_DE_CONOCIMIENTO_TEXTO}
 `;
 
@@ -62,16 +71,16 @@ ${BASE_DE_CONOCIMIENTO_TEXTO}
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const safetySettings = [
-    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
 ];
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings: safetySettings });
 const conversationHistory = {};
 
 // =================================================================
-// --- CREACIÓN DEL CLIENTE WPPCONNECT (PARA LA NUBE) ---
+// --- CREACIÓN DEL CLIENTE WPPCONNECT (CÓDIGO CORREGIDO PARA LA NUBE) ---
 // =================================================================
 
 wppconnect
@@ -88,7 +97,7 @@ wppconnect
           console.log('Cliente conectado. Bot "Valentina" está en línea.');
       }
     },
-    // Corrección Definitiva: Usa un navegador remoto gratuito.
+    // Corrección Definitiva: Usa un navegador remoto gratuito proporcionado por la comunidad.
     browserWSEndpoint: 'wss://browser.wppconnect.io'
   })
   .then((client) => start(client))
