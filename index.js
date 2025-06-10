@@ -9,7 +9,7 @@ const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@googl
 // 1. Clave API de prueba
 const GEMINI_API_KEY = "AIzaSyDdrQ3USvyaUk8SFq01B1CunboFGHbH84o";
 
-// 2. BASE DE CONOCIMIENTO (Actualizada)
+// 2. Base de Conocimiento (Actualizada)
 const BASE_DE_CONOCIMIENTO_TEXTO = `
 --- TERMINAL: Mercado Pago ---
 Formalidad: Ideal para negocios informales y emprendedores.
@@ -33,7 +33,7 @@ Costo_Inicial: Renta mensual de $200 MXN + IVA.
 Ventaja_Clave: Funciones más avanzadas y reportes detallados. Esta terminal es la que mejor integra el punto de venta como tal, donde puedes llevar inventario y cobrar servicios como luz o teléfono, cosa que la de Oxxo no puede hacer.
 `;
 
-// 3. PROMPT DEL SISTEMA (La personalidad de "Valentina")
+// 3. Prompt del Sistema (Personalidad de "Valentina")
 const PROMPT_SISTEMA = `
 Actúa como 'Valentina', un asesor experta y precisa de Soluciones de Pago MX. Tu canal de comunicación es WhatsApp.
 
@@ -78,8 +78,17 @@ const model = genAI.getGenerativeModel({
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
-    headless: false,
-    executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process',
+      '--disable-gpu'
+    ],
   }
 });
 
