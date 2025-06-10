@@ -1,15 +1,15 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
+const wppconnect = require('@wppconnect-team/wppconnect');
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 
 // =================================================================
 // --- CONFIGURACIÓN ---
 // =================================================================
 
-// 1. Clave API de prueba
-const GEMINI_API_KEY = "AIzaSyDdrQ3USvyaUk8SFq01B1CunboFGHbH84o";
+// 1. La clave API se leerá desde las variables de entorno de Koyeb.
+//    Esto es más seguro y es la práctica correcta para la nube.
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// 2. Base de Conocimiento (Actualizada)
+// 2. BASE DE CONOCIMIENTO (Completa y corregida)
 const BASE_DE_CONOCIMIENTO_TEXTO = `
 --- TERMINAL: Mercado Pago ---
 Formalidad: Ideal para negocios informales y emprendedores.
@@ -33,7 +33,7 @@ Costo_Inicial: Renta mensual de $200 MXN + IVA.
 Ventaja_Clave: Funciones más avanzadas y reportes detallados. Esta terminal es la que mejor integra el punto de venta como tal, donde puedes llevar inventario y cobrar servicios como luz o teléfono, cosa que la de Oxxo no puede hacer.
 `;
 
-// 3. Prompt del Sistema (Personalidad de "Valentina")
+// 3. PROMPT DEL SISTEMA (Completo y corregido)
 const PROMPT_SISTEMA = `
 Actúa como 'Valentina', un asesor experta y precisa de Soluciones de Pago MX. Tu canal de comunicación es WhatsApp.
 
@@ -61,88 +61,85 @@ ${BASE_DE_CONOCIMIENTO_TEXTO}
 // --- INICIALIZACIÓN DE SERVICIOS ---
 // =================================================================
 
+// Valida si la API Key fue cargada
+if (!GEMINI_API_KEY) {
+  console.error("ERROR CRÍTICO: La variable de entorno GEMINI_API_KEY no está definida.");
+  process.exit(1); // Detiene la aplicación si no hay clave
+}
+
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-
 const safetySettings = [
-  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
 ];
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings: safetySettings });
+const conversationHistory = {};
 
-const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
-    safetySettings: safetySettings
-});
+// =================================================================
+// --- CREACIÓN DEL CLIENTE WPPCONNECT PARA LA NUBE ---
+// =================================================================
 
-const client = new Client({
-  authStrategy: new LocalAuth(),
-  puppeteer: {
+wppconnect
+  .create({
+    session: 'valentina-session',
+    catchQR: (base64Qr, asciiQR) => {
+      console.log('--- NUEVO QR GENERADO ---');
+      console.log('Usa este texto para generar el QR visual en tu PC con el comando: npx qrcode-terminal "TEXTO_DEL_QR"');
+      console.log(base64Qr);
+    },
+    statusFind: (statusSession, session) => {
+      console.log('Estado de la sesión:', statusSession);
+      if (statusSession === 'inChat') {
+          console.log('Cliente conectado. Bot "Valentina" está en línea.');
+      }
+    },
     headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process',
-      '--disable-gpu'
-    ],
-  }
-});
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-extensions'] // Argumentos clave para servidores
+  })
+  .then((client) => start(client))
+  .catch((e) => console.log('Error al crear el cliente: ', e));
+
 
 // =================================================================
 // --- LÓGICA DEL BOT ---
 // =================================================================
 
-const conversationHistory = {};
+function start(client) {
+  client.onMessage(async (message) => {
+    // Ignora mensajes de grupos y sin cuerpo
+    if (message.isGroupMsg || !message.body) return;
 
-client.on('qr', qr => {
-  qrcode.generate(qr, { small: true });
-});
+    const userId = message.from;
+    console.log(`Mensaje recibido de ${userId}: "${message.body}"`);
 
-client.on('ready', () => {
-  console.log('Bot "Valentina" conectado y funcionando con Gemini.');
-});
-
-client.on('message', async message => {
-  if (message.fromMe) return;
-
-  const userId = message.from;
-
-  if (!conversationHistory[userId]) {
-    conversationHistory[userId] = [
-      { role: "user", parts: [{ text: PROMPT_SISTEMA }] },
-      { role: "model", parts: [{ text: "Entendido. Soy Valentina, lista para asesorar." }] },
-    ];
-  }
-
-  try {
-    const chat = model.startChat({
-      history: conversationHistory[userId],
-      generationConfig: {
-        maxOutputTokens: 1000,
-      },
-    });
-
-    const result = await chat.sendMessage(message.body);
-    const response = await result.response;
-    const rawText = response.text();
-
-    conversationHistory[userId].push({ role: "user", parts: [{ text: message.body }] });
-    conversationHistory[userId].push({ role: "model", parts: [{ text: rawText }] });
-
-    const mensajes = rawText.split('[FIN_MENSAJE]').map(msg => msg.trim()).filter(msg => msg);
-
-    for (const msg of mensajes) {
-      await client.sendMessage(userId, msg);
+    // Inicializa el historial si es la primera vez
+    if (!conversationHistory[userId]) {
+        conversationHistory[userId] = [
+            { role: "user", parts: [{ text: PROMPT_SISTEMA }] },
+            { role: "model", parts: [{ text: "Entendido. Soy Valentina, lista para asesorar." }] },
+        ];
     }
+    
+    try {
+        const chat = model.startChat({ history: conversationHistory[userId], generationConfig: { maxOutputTokens: 1000 } });
+        const result = await chat.sendMessage(message.body);
+        const response = await result.response;
+        const rawText = response.text();
 
-  } catch (err) {
-    console.error('Error al procesar con Gemini:', err);
-    await message.reply('Hubo un error al conectar con la IA. Por favor, intenta de nuevo.');
-  }
-});
+        // Actualiza el historial para la próxima interacción
+        conversationHistory[userId].push({ role: "user", parts: [{ text: message.body }] });
+        conversationHistory[userId].push({ role: "model", parts: [{ text: rawText }] });
 
-client.initialize();
+        // Divide la respuesta en múltiples mensajes y los envía
+        const mensajes = rawText.split('[FIN_MENSAJE]').map(msg => msg.trim()).filter(msg => msg);
+        for (const msg of mensajes) {
+            await client.sendText(userId, msg);
+        }
+    } catch (err) {
+        console.error('Error procesando con Gemini:', err.message);
+        await client.sendText(userId, 'Hubo un error al conectar con la IA. Por favor, intenta de nuevo.');
+    }
+  });
+}
