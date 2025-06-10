@@ -5,11 +5,10 @@ const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@googl
 // --- CONFIGURACIÓN ---
 // =================================================================
 
-// 1. La clave API se leerá desde las variables de entorno de Koyeb.
-//    Esto es más seguro y es la práctica correcta para la nube.
+// La clave se leerá desde las variables de entorno de Koyeb.
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// 2. BASE DE CONOCIMIENTO (Completa y corregida)
+// Tu base de conocimiento
 const BASE_DE_CONOCIMIENTO_TEXTO = `
 --- TERMINAL: Mercado Pago ---
 Formalidad: Ideal para negocios informales y emprendedores.
@@ -33,7 +32,7 @@ Costo_Inicial: Renta mensual de $200 MXN + IVA.
 Ventaja_Clave: Funciones más avanzadas y reportes detallados. Esta terminal es la que mejor integra el punto de venta como tal, donde puedes llevar inventario y cobrar servicios como luz o teléfono, cosa que la de Oxxo no puede hacer.
 `;
 
-// 3. PROMPT DEL SISTEMA (Completo y corregido)
+// Tu prompt de "Valentina"
 const PROMPT_SISTEMA = `
 Actúa como 'Valentina', un asesor experta y precisa de Soluciones de Pago MX. Tu canal de comunicación es WhatsApp.
 
@@ -61,10 +60,9 @@ ${BASE_DE_CONOCIMIENTO_TEXTO}
 // --- INICIALIZACIÓN DE SERVICIOS ---
 // =================================================================
 
-// Valida si la API Key fue cargada
 if (!GEMINI_API_KEY) {
-  console.error("ERROR CRÍTICO: La variable de entorno GEMINI_API_KEY no está definida.");
-  process.exit(1); // Detiene la aplicación si no hay clave
+  console.error("ERROR CRÍTICO: La variable de entorno GEMINI_API_KEY no está definida en Koyeb.");
+  process.exit(1);
 }
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -78,7 +76,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettin
 const conversationHistory = {};
 
 // =================================================================
-// --- CREACIÓN DEL CLIENTE WPPCONNECT PARA LA NUBE ---
+// --- CREACIÓN DEL CLIENTE WPPCONNECT ---
 // =================================================================
 
 wppconnect
@@ -91,12 +89,12 @@ wppconnect
     },
     statusFind: (statusSession, session) => {
       console.log('Estado de la sesión:', statusSession);
-      if (statusSession === 'inChat') {
+      if (statusSession === 'inChat' || statusSession === 'isConnected') {
           console.log('Cliente conectado. Bot "Valentina" está en línea.');
       }
     },
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-extensions'] // Argumentos clave para servidores
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-extensions']
   })
   .then((client) => start(client))
   .catch((e) => console.log('Error al crear el cliente: ', e));
@@ -108,13 +106,11 @@ wppconnect
 
 function start(client) {
   client.onMessage(async (message) => {
-    // Ignora mensajes de grupos y sin cuerpo
     if (message.isGroupMsg || !message.body) return;
 
     const userId = message.from;
     console.log(`Mensaje recibido de ${userId}: "${message.body}"`);
 
-    // Inicializa el historial si es la primera vez
     if (!conversationHistory[userId]) {
         conversationHistory[userId] = [
             { role: "user", parts: [{ text: PROMPT_SISTEMA }] },
@@ -128,11 +124,9 @@ function start(client) {
         const response = await result.response;
         const rawText = response.text();
 
-        // Actualiza el historial para la próxima interacción
         conversationHistory[userId].push({ role: "user", parts: [{ text: message.body }] });
         conversationHistory[userId].push({ role: "model", parts: [{ text: rawText }] });
 
-        // Divide la respuesta en múltiples mensajes y los envía
         const mensajes = rawText.split('[FIN_MENSAJE]').map(msg => msg.trim()).filter(msg => msg);
         for (const msg of mensajes) {
             await client.sendText(userId, msg);

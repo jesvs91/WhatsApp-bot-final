@@ -1,14 +1,13 @@
 {
-  "name": "whatsapp-connector-final",
+  "name": "whatsapp-connector-cloud",
   "version": "1.0.0",
-  "description": "Conector para Asesor TPV en la nube",
+  "description": "Conector final para Asesor TPV en la nube",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "@wppconnect-team/wppconnect": "^1.29.0",
-    "axios": "^1.6.8",
-    "express": "^4.19.2"
+    "@google/generative-ai": "^0.12.0",
+    "@wppconnect-team/wppconnect": "^1.29.0"
   }
 }
