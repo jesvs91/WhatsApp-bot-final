@@ -5,10 +5,10 @@ const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@googl
 // --- CONFIGURACIÓN ---
 // =================================================================
 
-// La clave se leerá desde las variables de entorno de Koyeb.
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// 1. Clave API de prueba
+const GEMINI_API_KEY = "AIzaSyDdrQ3USvyaUk8SFq01B1CunboFGHbH84o";
 
-// Tu base de conocimiento
+// 2. Base de Conocimiento (Actualizada)
 const BASE_DE_CONOCIMIENTO_TEXTO = `
 --- TERMINAL: Mercado Pago ---
 Formalidad: Ideal para negocios informales y emprendedores.
@@ -32,7 +32,7 @@ Costo_Inicial: Renta mensual de $200 MXN + IVA.
 Ventaja_Clave: Funciones más avanzadas y reportes detallados. Esta terminal es la que mejor integra el punto de venta como tal, donde puedes llevar inventario y cobrar servicios como luz o teléfono, cosa que la de Oxxo no puede hacer.
 `;
 
-// Tu prompt de "Valentina"
+// 3. Prompt del Sistema (Personalidad de "Valentina")
 const PROMPT_SISTEMA = `
 Actúa como 'Valentina', un asesor experta y precisa de Soluciones de Pago MX. Tu canal de comunicación es WhatsApp.
 
@@ -60,11 +60,6 @@ ${BASE_DE_CONOCIMIENTO_TEXTO}
 // --- INICIALIZACIÓN DE SERVICIOS ---
 // =================================================================
 
-if (!GEMINI_API_KEY) {
-  console.error("ERROR CRÍTICO: La variable de entorno GEMINI_API_KEY no está definida en Koyeb.");
-  process.exit(1);
-}
-
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const safetySettings = [
     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -76,7 +71,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettin
 const conversationHistory = {};
 
 // =================================================================
-// --- CREACIÓN DEL CLIENTE WPPCONNECT ---
+// --- CREACIÓN DEL CLIENTE WPPCONNECT (PARA LA NUBE) ---
 // =================================================================
 
 wppconnect
@@ -93,8 +88,8 @@ wppconnect
           console.log('Cliente conectado. Bot "Valentina" está en línea.');
       }
     },
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-extensions']
+    // Corrección clave para servidores en la nube. No usa Chrome local.
+    browserWSEndpoint: 'wss://browser.wppconnect.io'
   })
   .then((client) => start(client))
   .catch((e) => console.log('Error al crear el cliente: ', e));
