@@ -1,0 +1,13 @@
+services:
+- name: asesor-tpv-api
+  git:
+    branch: principal
+    repository: jesvs91/WhatsApp-bot-final
+  instance_type: free
+  build_command: npm install
+  run_command: npm start
+  buildpacks:
+  - https://github.com/jontewks/puppeteer-heroku-buildpack.git
+  env:
+  - key: GEMINI_API_KEY
+    value: "AIzaSyDdrQ3USvyaUk8SFq01B1CunboFGHbH84o"
