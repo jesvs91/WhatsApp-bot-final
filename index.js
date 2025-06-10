@@ -5,7 +5,7 @@ const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@googl
 // --- CONFIGURACIÓN ---
 // =================================================================
 
-// 1. Clave API de prueba
+// 1. Clave API de prueba (Hardcoded para verificación)
 const GEMINI_API_KEY = "AIzaSyDdrQ3USvyaUk8SFq01B1CunboFGHbH84o";
 
 // 2. Base de Conocimiento (Actualizada)
@@ -88,7 +88,7 @@ wppconnect
           console.log('Cliente conectado. Bot "Valentina" está en línea.');
       }
     },
-    // Corrección clave para servidores en la nube. No usa Chrome local.
+    // Corrección Definitiva: Usa un navegador remoto gratuito.
     browserWSEndpoint: 'wss://browser.wppconnect.io'
   })
   .then((client) => start(client))
